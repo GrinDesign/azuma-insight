@@ -71,24 +71,33 @@ SupabaseとFastAPIを使った名言集アプリ。LINEチャットログから�
 ### 3. データベース更新
 - `data/update_quotes_improved.py`: 分類結果をデータベースに反映
 
-## API機能（レベル1）
+## API機能（レベル2）
 
 ### FastAPI REST API
 - **起動**: `python run_api.py`
 - **ドキュメント**: http://localhost:8000/docs
 - **ReDoc**: http://localhost:8000/redoc
+- **バージョン**: 2.0.0
 
 ### エンドポイント
-- `GET /` - API基本情報
-- `GET /quotes` - 引用一覧（フィルタリング・ページネーション付き）
+- `GET /` - API基本情報・機能一覧
+- `GET /quotes` - 引用一覧（高度なフィルタリング・ソート・ページネーション付き）
 - `GET /quotes/{id}` - 特定の引用取得
 - `POST /quotes` - 新しい引用作成
 - `PUT /quotes/{id}` - 引用更新
 - `DELETE /quotes/{id}` - 引用削除
-- `GET /quotes/search?q={keyword}` - キーワード検索
+- `GET /quotes/search` - 高度なキーワード検索（複数フィールド・AND/OR検索）
+- `GET /quotes/tags` - タグベース検索（複数タグ・AND/OR検索）
 - `GET /quotes/theme/{theme}` - テーマ別検索
 - `GET /quotes/random` - ランダム引用取得
-- `GET /stats` - 統計情報
+- `GET /stats` - 拡張統計情報
+
+### 高度な機能
+- **複数条件フィルタリング**: テーマ、サブテーマ、作者、タグ、日付範囲
+- **高度な検索**: 複数フィールド、AND/OR検索、検索対象フィールド指定
+- **ソート機能**: 複数フィールド、昇順・降順選択
+- **タグ検索**: 複数タグでのAND/OR検索
+- **拡張統計**: テーマ別、サブテーマ別、タグ別、作者別、月別統計
 
 ### テスト
 - `python test_api.py` - API機能テスト
@@ -107,7 +116,7 @@ SupabaseとFastAPIを使った名言集アプリ。LINEチャットログから�
 - [x] 名言データのCSV変換・分割
 - [x] 自動分類システムの実装
 - [x] データベースへの分類結果反映
-- [x] FastAPIでAPI作成（レベル1完了）
+- [x] FastAPIでAPI作成（レベル2完了）
 - [ ] フロントエンド作成
 - [ ] ユーザー認証機能
 - [ ] 名言検索機能
@@ -121,6 +130,7 @@ SupabaseとFastAPIを使った名言集アプリ。LINEチャットログから�
 - 2025-07-04: LINEチャットログからの名言抽出・データベース化完了
 - 2025-07-04: 自動分類システム実装、256件の名言をテーマ・サブテーマ・タグで分類
 - 2025-07-04: FastAPI REST API（レベル1）実装完了、基本的なCRUD操作・検索・統計機能を提供
+- 2025-07-04: FastAPI REST API（レベル2）実装完了、高度な検索・フィルタリング・ソート・統計機能を提供
 
 ## 工夫・学び
 - 仮想環境（venv）は.gitignoreで除外
