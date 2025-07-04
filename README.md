@@ -1,11 +1,13 @@
 # 名言集アプリ（azuma-insight）
 
 ## 概要
-SupabaseとFastAPIを使った名言集アプリ。名言の登録・検索・感想記録ができます。
+SupabaseとFastAPIを使った名言集アプリ。LINEチャットログから抽出した名言をデータベース化し、テーマ・サブテーマ・タグで分類・検索できます。
 スマホからも使えるWebアプリを目指しています。
 
 ## 目的
-- 名言をデータベース化し、条件に合った名言を引き出す
+- LINEチャットログから名言を抽出・データベース化
+- テーマ・サブテーマ・タグによる自動分類
+- 条件に合った名言を引き出す検索機能
 - 感想を記録し、分析も行う
 
 ## 開発環境
@@ -17,15 +19,57 @@ SupabaseとFastAPIを使った名言集アプリ。名言の登録・検索・�
 
 ## セットアップ手順
 1. 仮想環境の作成
+   ```bash
+   python -m venv venv
+   source venv/bin/activate  # macOS/Linux
+   ```
 2. 必要なライブラリのインストール
+   ```bash
+   pip install -r requirements.txt
+   ```
 3. Supabaseプロジェクトの準備
 4. .envファイルに接続情報を記載
-5. supabase_test.pyで接続テスト
+5. データベース接続テスト
 
 ## データベース設計
-- quotes（名言）: id, title, text, author, theme, tags, created_at
-- users（ユーザー）: id, username, email, password_hash, created_at
-- impressions（感想）: id, quote_id, user_id, impression, created_at
+### quotes（名言）テーブル
+- `id`: UUID（主キー）
+- `title`: 名言のタイトル
+- `text`: 名言の本文
+- `author`: 作者（デフォルト: '成幸者への道'）
+- `theme`: テーマ（成功・目標、人間関係、学習・成長など）
+- `subtheme`: サブテーマ（目標設定、習慣・継続、コミュニケーションなど）
+- `tags`: タグ配列（時間、決断、行動、健康、継続など）
+- `created_at`: 作成日時
+
+### users（ユーザー）テーブル
+- `id`: UUID（主キー）
+- `username`: ユーザー名
+- `email`: メールアドレス
+- `password_hash`: パスワードハッシュ
+- `created_at`: 作成日時
+
+### impressions（感想）テーブル
+- `id`: UUID（主キー）
+- `quote_id`: 名言ID（外部キー）
+- `user_id`: ユーザーID（外部キー）
+- `impression`: 感想内容
+- `created_at`: 作成日時
+
+## データ処理機能
+
+### 1. データ抽出・変換
+- `data/export_for_gpt.py`: 名言データを50件ずつCSVに分割
+- LINEチャットログから抽出した256件の名言を処理
+
+### 2. 自動分類システム
+- `data/improved_classify_quotes.py`: キーワードベースの自動分類
+- **テーマ**: 10カテゴリ（成功・目標、人間関係、学習・成長、健康・生活など）
+- **サブテーマ**: 10カテゴリ（目標設定、習慣・継続、コミュニケーションなど）
+- **タグ**: 20個（時間、決断、行動、健康、継続、自信、勇気など）
+
+### 3. データベース更新
+- `data/update_quotes_improved.py`: 分類結果をデータベースに反映
 
 ## 外部パッケージ
 - supabase-utils（共通Supabase操作ユーティリティ）
@@ -37,6 +81,10 @@ SupabaseとFastAPIを使った名言集アプリ。名言の登録・検索・�
 - [x] Supabaseテーブル設計・作成
 - [x] supabase-utilsパッケージ化
 - [x] 接続テスト実装
+- [x] LINEチャットログからの名言抽出
+- [x] 名言データのCSV変換・分割
+- [x] 自動分類システムの実装
+- [x] データベースへの分類結果反映
 - [ ] FastAPIでAPI作成
 - [ ] フロントエンド作成
 - [ ] ユーザー認証機能
@@ -48,16 +96,29 @@ SupabaseとFastAPIを使った名言集アプリ。名言の登録・検索・�
 - 2024-07-04: README.md作成、GitHub連携完了
 - 2024-07-05: Supabaseテーブル設計・作成、テストデータ投入
 - 2024-07-06: supabase-utilsパッケージ化、接続テスト実装
+- 2025-07-04: LINEチャットログからの名言抽出・データベース化完了
+- 2025-07-04: 自動分類システム実装、256件の名言をテーマ・サブテーマ・タグで分類
 
 ## 工夫・学び
 - 仮想環境（venv）は.gitignoreで除外
 - requirements.txtで依存管理
 - .envで環境変数管理
+- dataディレクトリは.gitignoreで除外（機密データ保護）
+- キーワードベースの自動分類システムを実装
+- CSV分割による大量データの効率的な処理
+- Supabase Pythonクライアントの活用
 - GitHub認証はPersonal Access Token（PAT）を利用
 - コンフリクト解消やrebase、cherry-pickも経験
 - printによるデバッグ、エラー時の対処法も記録
 - パッケージ修正時は再pip不要（-eオプション）
 
+## データ統計
+- **総名言数**: 256件
+- **テーマ数**: 10カテゴリ
+- **サブテーマ数**: 10カテゴリ
+- **タグ数**: 20個
+- **データ期間**: 2024年10月〜2025年7月
+
 ---
 
-**Supabase＋Python（FastAPI）＋GitHub＋ユーティリティパッケージ化というモダンな開発フローを、トラブルシュートやベストプラクティスを交えながら着実に構築・運用しています。**
+**Supabase＋Python（FastAPI）＋GitHub＋自動分類システムというモダンな開発フローを、大量データ処理や機械学習的アプローチを交えながら着実に構築・運用しています。**
