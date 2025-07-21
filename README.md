@@ -1,157 +1,126 @@
-# 名言集アプリ（azuma-insight）
+# Azuma Insight
 
-## 概要
-SupabaseとFastAPIを使った名言集アプリ。LINEチャットログから抽出した名言をデータベース化し、テーマ・サブテーマ・タグで分類・検索できます。
-スマホからも使えるWebアプリを目指しています。
+## サービス概要
+- 名言・引用・感想をコレクション・共有できるPWA対応Webアプリ
+- 高度な検索・タグ・テーマ・統計機能を搭載
 
-## 目的
-- LINEチャットログから名言を抽出・データベース化
-- テーマ・サブテーマ・タグによる自動分類
-- 条件に合った名言を引き出す検索機能
-- 感想を記録し、分析も行う
+## 技術スタック
+- フロントエンド: React + Vite + TypeScript + PWA
+- バックエンド: FastAPI
+- データベース: Supabase/PostgreSQL
 
-## 開発環境
-- macOS（Cursorエディタ）
-- Python 3.x
-- FastAPI
-- Supabase
-- Git + GitHub
+## 主な機能
+- 名言の登録・編集・削除・検索
+- タグ・テーマ・サブテーマによる分類
+- 感想（impression）の投稿
+- 統計情報の表示
+- PWA対応（オフライン利用・ホーム追加）
 
 ## セットアップ手順
-1. 仮想環境の作成
-   ```bash
-   python -m venv venv
-   source venv/bin/activate  # macOS/Linux
+1. 依存パッケージインストール
    ```
-2. 必要なライブラリのインストール
-   ```bash
-   pip install -r requirements.txt
+   cd frontend
+   npm install
    ```
-3. Supabaseプロジェクトの準備
-4. .envファイルに接続情報を記載
-5. データベース接続テスト
+2. 開発サーバー起動
+   ```
+   npm run dev
+   ```
+3. 本番ビルド＆プレビュー
+   ```
+   npm run build
+   npm run preview
+   ```
 
 ## データベース設計
-### quotes（名言）テーブル
-- `id`: UUID（主キー）
-- `title`: 名言のタイトル
-- `text`: 名言の本文
-- `author`: 作者（デフォルト: '成幸者への道'）
-- `theme`: テーマ（成功・目標、人間関係、学習・成長など）
-- `subtheme`: サブテーマ（目標設定、習慣・継続、コミュニケーションなど）
-- `tags`: タグ配列（時間、決断、行動、健康、継続など）
-- `created_at`: 作成日時
 
-### users（ユーザー）テーブル
-- `id`: UUID（主キー）
-- `username`: ユーザー名
-- `email`: メールアドレス
-- `password_hash`: パスワードハッシュ
-- `created_at`: 作成日時
+### users
+| カラム名       | 型                       | 制約                | 説明         |
+|:--------------|:-------------------------|:--------------------|:-------------|
+| id            | uuid                     | PRIMARY KEY, DEFAULT gen_random_uuid() | ユーザーID   |
+| username      | text                     | NOT NULL            | ユーザー名   |
+| email         | text                     | NOT NULL, UNIQUE    | メールアドレス|
+| password_hash | text                     | NOT NULL            | パスワードハッシュ|
+| created_at    | timestamp with time zone | DEFAULT timezone('utc', now()) | 作成日時 |
 
-### impressions（感想）テーブル
-- `id`: UUID（主キー）
-- `quote_id`: 名言ID（外部キー）
-- `user_id`: ユーザーID（外部キー）
-- `impression`: 感想内容
-- `created_at`: 作成日時
+### quotes
+| カラム名    | 型                       | 制約                | 説明         |
+|:-----------|:-------------------------|:--------------------|:-------------|
+| id         | uuid                     | PRIMARY KEY, DEFAULT gen_random_uuid() | 名言ID      |
+| title      | text                     | NOT NULL            | タイトル     |
+| text       | text                     | NOT NULL            | 本文         |
+| author     | text                     | NOT NULL, DEFAULT '成幸者への道' | 作者         |
+| theme      | text                     |                     | テーマ       |
+| subtheme   | text                     |                     | サブテーマ   |
+| tags       | text[]                   |                     | タグ         |
+| created_at | timestamp with time zone | DEFAULT timezone('utc', now()) | 作成日時 |
 
-## データ処理機能
+### impressions
+| カラム名     | 型                       | 制約                | 説明         |
+|:------------|:-------------------------|:--------------------|:-------------|
+| id          | uuid                     | PRIMARY KEY, DEFAULT gen_random_uuid() | 感想ID      |
+| quote_id    | uuid                     | NOT NULL, REFERENCES quotes(id) ON DELETE CASCADE | 名言ID      |
+| user_id     | uuid                     | NOT NULL, REFERENCES users(id) ON DELETE CASCADE | ユーザーID  |
+| impression  | text                     | NOT NULL            | 感想         |
+| created_at  | timestamp with time zone | DEFAULT timezone('utc', now()) | 作成日時 |
 
-### 1. データ抽出・変換
-- `data/export_for_gpt.py`: 名言データを50件ずつCSVに分割
-- LINEチャットログから抽出した256件の名言を処理
+#### ER図（Mermaid記法）
+```mermaid
+erDiagram
+    USERS ||--o{ IMPRESSIONS : has
+    QUOTES ||--o{ IMPRESSIONS : has
 
-### 2. 自動分類システム
-- `data/improved_classify_quotes.py`: キーワードベースの自動分類
-- **テーマ**: 10カテゴリ（成功・目標、人間関係、学習・成長、健康・生活など）
-- **サブテーマ**: 10カテゴリ（目標設定、習慣・継続、コミュニケーションなど）
-- **タグ**: 20個（時間、決断、行動、健康、継続、自信、勇気など）
+    USERS {
+        uuid id PK
+        text username
+        text email
+        text password_hash
+        timestamp created_at
+    }
+    QUOTES {
+        uuid id PK
+        text title
+        text text
+        text author
+        text theme
+        text subtheme
+        text[] tags
+        timestamp created_at
+    }
+    IMPRESSIONS {
+        uuid id PK
+        uuid quote_id FK
+        uuid user_id FK
+        text impression
+        timestamp created_at
+    }
+```
 
-### 3. データベース更新
-- `data/update_quotes_improved.py`: 分類結果をデータベースに反映
+## API仕様（主要エンドポイント）
 
-## API機能（レベル2）
+| メソッド | パス                  | 概要                     | 主なパラメータ・ボディ         |
+|:---------|:----------------------|:-------------------------|:------------------------------|
+| GET      | /quotes               | 名言一覧取得             | limit, offset, theme, tags, author, sort_by, sort_order  |
+| GET      | /quotes/{quote_id}    | 名言詳細取得             | quote_id                      |
+| POST     | /quotes               | 名言新規作成             | title, text, author, theme, subtheme, tags              |
+| PUT      | /quotes/{quote_id}    | 名言更新                 | quote_id, 更新内容            |
+| DELETE   | /quotes/{quote_id}    | 名言削除                 | quote_id                      |
+| GET      | /quotes/search        | 名言キーワード検索       | q, search_fields, search_type, limit, offset            |
+| GET      | /quotes/tags          | タグによる名言検索       | tags, match_all, limit, offset                          |
+| GET      | /quotes/theme/{theme} | テーマ別名言取得         | theme, limit, offset           |
+| GET      | /quotes/random        | ランダム名言取得         | なし                          |
+| GET      | /stats                | 統計情報取得             | なし                          |
 
-### FastAPI REST API
-- **起動**: `python run_api.py`
-- **ドキュメント**: http://localhost:8000/docs
-- **ReDoc**: http://localhost:8000/redoc
-- **バージョン**: 2.0.0
+- 認証: 現状のAPIには認証必須エンドポイントは見当たりません（今後追加可能）
 
-### エンドポイント
-- `GET /` - API基本情報・機能一覧
-- `GET /quotes` - 引用一覧（高度なフィルタリング・ソート・ページネーション付き）
-- `GET /quotes/{id}` - 特定の引用取得
-- `POST /quotes` - 新しい引用作成
-- `PUT /quotes/{id}` - 引用更新
-- `DELETE /quotes/{id}` - 引用削除
-- `GET /quotes/search` - 高度なキーワード検索（複数フィールド・AND/OR検索）
-- `GET /quotes/tags` - タグベース検索（複数タグ・AND/OR検索）
-- `GET /quotes/theme/{theme}` - テーマ別検索
-- `GET /quotes/random` - ランダム引用取得
-- `GET /stats` - 拡張統計情報
+## システム構成
+- フロントエンド: Vite + React + TypeScript + PWA（`frontend/`）
+- バックエンドAPI: FastAPI（`api/main.py`）
+- データベース: Supabase/PostgreSQL（SQLスクリプトは`sql/azuma-insight/`）
+- 通信: REST API（CORS対応済み）
+- 認証: 今後追加可能（現状は未実装）
 
-### 高度な機能
-- **複数条件フィルタリング**: テーマ、サブテーマ、作者、タグ、日付範囲
-- **高度な検索**: 複数フィールド、AND/OR検索、検索対象フィールド指定
-- **ソート機能**: 複数フィールド、昇順・降順選択
-- **タグ検索**: 複数タグでのAND/OR検索
-- **拡張統計**: テーマ別、サブテーマ別、タグ別、作者別、月別統計
-
-### テスト
-- `python test_api.py` - API機能テスト
-
-## 外部パッケージ
-- supabase-utils（共通Supabase操作ユーティリティ）
-  - pip install -e ../supabase-utils で開発用インストール
-
-## TODO
-- [x] GitHubリポジトリ作成
-- [x] README.md作成
-- [x] Supabaseテーブル設計・作成
-- [x] supabase-utilsパッケージ化
-- [x] 接続テスト実装
-- [x] LINEチャットログからの名言抽出
-- [x] 名言データのCSV変換・分割
-- [x] 自動分類システムの実装
-- [x] データベースへの分類結果反映
-- [x] FastAPIでAPI作成（レベル2完了）
-- [ ] フロントエンド作成
-- [ ] ユーザー認証機能
-- [ ] 名言検索機能
-- [ ] 感想記録機能
-
-## 開発記録
-- 2024-07-03: GitHubリポジトリ作成、初期セットアップ
-- 2024-07-04: README.md作成、GitHub連携完了
-- 2024-07-05: Supabaseテーブル設計・作成、テストデータ投入
-- 2024-07-06: supabase-utilsパッケージ化、接続テスト実装
-- 2025-07-04: LINEチャットログからの名言抽出・データベース化完了
-- 2025-07-04: 自動分類システム実装、256件の名言をテーマ・サブテーマ・タグで分類
-- 2025-07-04: FastAPI REST API（レベル1）実装完了、基本的なCRUD操作・検索・統計機能を提供
-- 2025-07-04: FastAPI REST API（レベル2）実装完了、高度な検索・フィルタリング・ソート・統計機能を提供
-
-## 工夫・学び
-- 仮想環境（venv）は.gitignoreで除外
-- requirements.txtで依存管理
-- .envで環境変数管理
-- dataディレクトリは.gitignoreで除外（機密データ保護）
-- キーワードベースの自動分類システムを実装
-- CSV分割による大量データの効率的な処理
-- Supabase Pythonクライアントの活用
-- GitHub認証はPersonal Access Token（PAT）を利用
-- コンフリクト解消やrebase、cherry-pickも経験
-- printによるデバッグ、エラー時の対処法も記録
-- パッケージ修正時は再pip不要（-eオプション）
-
-## データ統計
-- **総名言数**: 256件
-- **テーマ数**: 10カテゴリ
-- **サブテーマ数**: 10カテゴリ
-- **タグ数**: 20個
-- **データ期間**: 2024年10月〜2025年7月
-
----
-
-**Supabase＋Python（FastAPI）＋GitHub＋自動分類システムというモダンな開発フローを、大量データ処理や機械学習的アプローチを交えながら着実に構築・運用しています。**
+## 工夫点・アピールポイント
+- PWA対応でスマホ・PCどちらでも快適
+- 高度な検索・統計機能
+- Supabase/PostgreSQLによるスケーラブルなDB設計
